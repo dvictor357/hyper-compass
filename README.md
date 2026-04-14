@@ -52,24 +52,27 @@ web/                     Next.js 16 dashboard (4-tab, 3D whale network)
 ## Quick Start
 
 ```bash
-# Install
-npm install
+# Install Bun
+curl -fsSL https://bun.sh/install | bash
+
+# Install dependencies
+bun install
 
 # Run in mock mode (no API keys needed)
-NANSEN_MOCK=true npm run dev
+NANSEN_MOCK=true bun run dev
 
 # Run with real Nansen CLI
 nansen auth login
-npm run dev
+bun run dev
 
 # Run single pipeline execution
-npm run pipeline
+bun run pipeline
 
 # Run tests
-npm test
+bun run test
 
 # Type check
-npm run lint
+bun run lint
 ```
 
 ## CLI Options
@@ -96,8 +99,8 @@ TELEGRAM_BOT_TOKEN=<token>    Telegram bot token for alerts
 
 ```bash
 cd web
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 4-tab dashboard:
@@ -112,10 +115,10 @@ Ethereum, Solana, Base, Arbitrum, Polygon, Optimism, Avalanche, BNB
 
 ## Tech Stack
 
-- TypeScript 5.7, Node 20+, ES2022 with NodeNext modules
+- TypeScript 5.9, Bun 1.x runtime, ES2022 with NodeNext modules
 - Ink 5 + React 18 (TUI), Commander (CLI)
 - Next.js 16 + React 19 + Tailwind 4 + Three.js (Web dashboard)
-- Vitest 3 (testing), OpenRouter (LLM)
+- Vitest 3 via Bun, OpenRouter (LLM)
 - Nansen CLI (data source)
 
 ## License
