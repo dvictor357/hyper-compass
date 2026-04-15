@@ -1,6 +1,9 @@
 import { Command } from 'commander';
 import { render } from 'ink';
 import React from 'react';
+import { initProvider } from './lib/providers/index.js';
+
+initProvider();
 
 const program = new Command();
 

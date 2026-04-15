@@ -9,7 +9,8 @@ import { StatsPane } from './components/StatsPane.js';
 import { SyndicatePane, type SyndicateDisplay } from './components/SyndicatePane.js';
 import { analyzeBatch, getMockAnalysis, type AIAnalysis } from './lib/ai-analyzer.js';
 import { detectConvergence, type ConvergenceSignal } from './lib/convergence.js';
-import { fetchAccount, isMock, type Chain } from './lib/nansen.js';
+import { CHAINS, type Chain } from './lib/providers/types.js';
+import { provider } from './lib/providers/index.js';
 import { findAccumulations, scanAll, type ChainScan } from './lib/scanner.js';
 import { createSignal, rankSignals, type AlphaSignal } from './lib/signal-engine.js';
 import { checkPerformance, getStats, loadHistory, trackSignal, type Stats } from './lib/tracker.js';
@@ -113,7 +114,7 @@ interface AppProps {
 
 async function fetchCreditsUsed(initialRef: React.MutableRefObject<number | null>): Promise<number | null> {
   try {
-    const res = await fetchAccount();
+    const res = await provider().fetchAccount();
     const remaining = parseInt(String((res.data?.data as any)?.credits_remaining ?? ''), 10);
     if (!Number.isFinite(remaining)) return null;
     if (initialRef.current === null) initialRef.current = remaining;
@@ -178,7 +179,7 @@ export function App({ chains, intervalMs = 60_000, noAI = false }: AppProps): Re
         if (!active) return;
         setScanResults(scans);
 
-        if (isMock()) {
+        if (provider().isMock()) {
           setSyndicates(MOCK_SYNDICATES);
           setDivergences(MOCK_DIVERGENCES);
         }
@@ -189,7 +190,7 @@ export function App({ chains, intervalMs = 60_000, noAI = false }: AppProps): Re
 
         let analyses: AIAnalysis[] = [];
         if (convergence.length > 0) {
-          if (noAI || isMock()) {
+          if (noAI || provider().isMock()) {
             analyses = convergence.map(s => getMockAnalysis(s));
           } else {
             analyses = await analyzeBatch(convergence, scans);

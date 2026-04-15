@@ -1,4 +1,4 @@
-import type { Chain } from './nansen.js';
+import type { Chain } from './providers/types.js';
 
 export interface WalletTrade {
   wallet: string;

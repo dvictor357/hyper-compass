@@ -9,5 +9,8 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
     },
+    alias: {
+      'bun:sqlite': new URL('./src/__tests__/__mocks__/bun-sqlite.ts', import.meta.url).pathname,
+    },
   },
 });

@@ -3,17 +3,12 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  run, fetchNetflow, fetchTokenScreener, fetchDexTrades, fetchHoldings,
-  fetchTokenHolders, fetchWhoBoughtSold, fetchFlowIntelligence,
-  fetchTokenIndicators, fetchProfilerLabels, fetchProfilerPnl,
-  fetchProfilerCounterparties, fetchProfilerRelatedWallets,
-  fetchTokenDexTrades, fetchTokenPnl, fetchTokenPerpPositions,
-  fetchTokenJupDca, fetchPerpScreener, fetchPerpLeaderboard,
-  fetchTradeQuote, fetchTradeExecute, fetchWalletList, fetchWalletCreate,
-  fetchNansenAgent, fetchAccount, fetchDCAs, fetchHistoricalHoldings,
-  fetchSmPerpTrades, type Chain,
-} from './lib/nansen.js';
+  CHAINS, type Chain,
+} from './lib/providers/types.js';
+import { provider, initProvider } from './lib/providers/index.js';
 import { count, summary as telSummary, all as telEntries } from './lib/telemetry.js';
+
+initProvider();
 
 const DIR = dirname(fileURLToPath(import.meta.url));
 
@@ -163,7 +158,7 @@ export async function phaseDiscovery(chains: Chain[]): Promise<TokenSignal[]> {
   const signals: TokenSignal[] = [];
 
   log('DISCOVER', 'Checking API credits...');
-  const account = await fetchAccount();
+  const account = await provider().fetchAccount();
   if (account.ok) {
     const d = account.data as any;
     ok(`API active, credits: ${d?.data?.credits_remaining ?? '?'}`);
@@ -171,13 +166,13 @@ export async function phaseDiscovery(chains: Chain[]): Promise<TokenSignal[]> {
 
   for (const chain of chains) {
     log('DISCOVER', `Netflow on ${chalk.white.bold(chain)}...`);
-    const nf = await fetchNetflow(chain, 10);
+    const nf = await provider().fetchNetflow(chain, 10);
     if (nf.ok && nf.data?.data) ok(`${(Array.isArray(nf.data.data) ? nf.data.data : []).length} netflow entries on ${chain}`);
   }
 
   for (const chain of chains) {
     log('DISCOVER', `Screener on ${chalk.white.bold(chain)}...`);
-    const sc = await fetchTokenScreener(chain, '24h', 20);
+    const sc = await provider().fetchTokenScreener(chain, '24h', 20);
     if (sc.ok && sc.data?.data) {
       const tokens: any[] = Array.isArray(sc.data.data) ? sc.data.data : [];
       for (const t of tokens) {
@@ -196,11 +191,11 @@ export async function phaseDiscovery(chains: Chain[]): Promise<TokenSignal[]> {
   }
 
   const extra = await Promise.allSettled([
-    fetchDexTrades(chains[0], 10),
-    fetchHoldings(chains[0], 10),
-    fetchDCAs(chains[0], 5),
-    fetchHistoricalHoldings(chains[0], 5),
-    fetchSmPerpTrades(chains[0], 5),
+    provider().fetchDexTrades(chains[0], 10),
+    provider().fetchHoldings(chains[0], 10),
+    provider().fetchDCAs(chains[0], 5),
+    provider().fetchHistoricalHoldings(chains[0], 5),
+    provider().fetchSmPerpTrades(chains[0], 5),
   ]);
   for (const r of extra) { if (r.status === 'fulfilled' && r.value?.ok) ok('Extra discovery data fetched'); }
 
@@ -227,11 +222,11 @@ export async function phaseTokenAnalysis(tokens: TokenSignal[]): Promise<Map<str
 
     log('TOKEN', `${chalk.white.bold(token.symbol)} analysis on ${token.chain}...`);
     const [holders, bs, fi, dt, pnl] = await Promise.allSettled([
-      fetchTokenHolders(token.chain, token.address, 10),
-      fetchWhoBoughtSold(token.chain, token.address),
-      fetchFlowIntelligence(token.chain, token.address),
-      fetchTokenDexTrades(token.chain, token.address, 7),
-      fetchTokenPnl(token.chain, token.address, 7),
+      provider().fetchTokenHolders(token.chain, token.address, 10),
+      provider().fetchWhoBoughtSold(token.chain, token.address),
+      provider().fetchFlowIntelligence(token.chain, token.address),
+      provider().fetchTokenDexTrades(token.chain, token.address, 7),
+      provider().fetchTokenPnl(token.chain, token.address, 7),
     ]);
 
     if (holders.status === 'fulfilled' && holders.value.ok) { data.holders = holders.value.data?.data; ok(`Holders loaded for ${token.symbol}`); }
@@ -241,7 +236,7 @@ export async function phaseTokenAnalysis(tokens: TokenSignal[]): Promise<Map<str
     if (pnl.status === 'fulfilled' && pnl.value.ok) { data.pnlLeaders = pnl.value.data?.data; ok(`PnL for ${token.symbol}`); }
 
     if (token.chain === 'solana') {
-      const dca = await fetchTokenJupDca(token.address);
+      const dca = await provider().fetchTokenJupDca(token.address);
       if (dca.ok) { data.jupDca = dca.data?.data; ok(`Jupiter DCA for ${token.symbol}`); }
     }
 
@@ -269,10 +264,10 @@ export async function phaseWhaleProfiling(tokens: TokenSignal[], analysis: Map<s
 
       log('WHALE', `Profiling ${addr.slice(0, 8)}...${addr.slice(-4)}`);
       const [labels, pnl, cp, related] = await Promise.allSettled([
-        fetchProfilerLabels(addr, chain),
-        fetchProfilerPnl(addr, chain),
-        fetchProfilerCounterparties(addr, chain, 5),
-        fetchProfilerRelatedWallets(addr, chain),
+        provider().fetchProfilerLabels(addr, chain),
+        provider().fetchProfilerPnl(addr, chain),
+        provider().fetchProfilerCounterparties(addr, chain, 5),
+        provider().fetchProfilerRelatedWallets(addr, chain),
       ]);
 
       const labelList: string[] = [];
@@ -332,13 +327,13 @@ export async function phasePerpIntel(tokens: TokenSignal[]): Promise<Map<string,
   console.log(chalk.bold.cyan('\n   PHASE 4: DERIVATIVES + PERP INTELLIGENCE\n'));
   const perpSentiment = new Map<string, string>();
 
-  const [ps, pl] = await Promise.allSettled([fetchPerpScreener(30), fetchPerpLeaderboard(30)]);
+  const [ps, pl] = await Promise.allSettled([provider().fetchPerpScreener(30), provider().fetchPerpLeaderboard(30)]);
   if (ps.status === 'fulfilled' && ps.value.ok) ok('Perp screener loaded');
   if (pl.status === 'fulfilled' && pl.value.ok) ok('Perp leaderboard loaded');
 
   for (const token of tokens.slice(0, 2)) {
     log('PERP', `Positions for ${chalk.white.bold(token.symbol)}...`);
-    const pp = await fetchTokenPerpPositions(token.symbol);
+    const pp = await provider().fetchTokenPerpPositions(token.symbol);
     if (pp.ok) {
       const d = pp.data?.data as any;
       const longs = d?.total_long_usd || d?.longs || 0;
@@ -364,7 +359,7 @@ export async function phaseConvictionRisk(
 
   for (const token of tokens.slice(0, 3)) {
     log('SCORE', `Indicators for ${chalk.white.bold(token.symbol)}...`);
-    const ind = await fetchTokenIndicators(token.chain, token.address);
+    const ind = await provider().fetchTokenIndicators(token.chain, token.address);
 
     let conviction = token.score;
     let flowStrength = 0;
@@ -412,7 +407,7 @@ export async function phaseAIAgent(candidates: TradeCandidate[]): Promise<void> 
   const question = `Analyze ${top.token.symbol} on ${top.token.chain}. Netflow ${top.token.netflow > 0 ? 'positive' : 'negative'} at $${fmt(Math.abs(top.token.netflow))}. Volume $${fmt(top.token.volume)}. Outlook?`;
 
   log('AI', `Nansen Agent: ${chalk.white.bold(top.token.symbol)}...`);
-  const resp = await fetchNansenAgent(question, false);
+  const resp = await provider().fetchNansenAgent(question, false);
   if (resp.ok) {
     const d = resp.data?.data as any;
     const answer = d?.answer || d?.response || d?.text || JSON.stringify(d).slice(0, 300);
@@ -429,14 +424,14 @@ export async function phaseExecution(candidates: TradeCandidate[], executeFlag: 
   const quotes: any[] = [];
 
   log('EXEC', 'Checking wallets...');
-  const wallets = await fetchWalletList();
+  const wallets = await provider().fetchWalletList();
   if (wallets.ok) {
     const wData = wallets.data?.data || wallets.data;
     const wList = Array.isArray(wData) ? wData : ((wData as any)?.wallets || []);
     if (wList.length > 0) ok(`${wList.length} wallet(s)`);
     else {
       log('EXEC', 'Creating wallet...');
-      const created = await fetchWalletCreate('alpha-executor');
+      const created = await provider().fetchWalletCreate('alpha-executor');
       if (created.ok) ok('Wallet created');
     }
   }
@@ -452,7 +447,7 @@ export async function phaseExecution(candidates: TradeCandidate[], executeFlag: 
   const amountHuman = top.token.chain === 'solana' ? '0.1 SOL' : '0.1 ETH';
 
   log('EXEC', `Quote: ${amountHuman} -> ${top.token.symbol}...`);
-  const quote = await fetchTradeQuote(top.token.chain, fromToken, top.token.address, amount);
+  const quote = await provider().fetchTradeQuote(top.token.chain, fromToken, top.token.address, amount);
 
   if (quote.ok && quote.data) {
     ok(`Quote received for ${top.token.symbol}`);
@@ -463,7 +458,7 @@ export async function phaseExecution(candidates: TradeCandidate[], executeFlag: 
       const quoteId = qData?.quoteId || qData?.quote_id;
       if (quoteId) {
         log('EXEC', `EXECUTING (quote: ${quoteId})...`);
-        const exec = await fetchTradeExecute(quoteId);
+        const exec = await provider().fetchTradeExecute(quoteId);
         if (exec.ok) { ok('TRADE EXECUTED'); quotes[quotes.length - 1].executed = true; }
         else warn(`Execution failed: ${exec.error}`);
       }

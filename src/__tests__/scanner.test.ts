@@ -1,14 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const fetchNetflow = vi.fn();
-const fetchDexTrades = vi.fn();
-const fetchTokenScreener = vi.fn();
+const mockProvider = {
+  fetchNetflow: vi.fn(),
+  fetchDexTrades: vi.fn(),
+  fetchTokenScreener: vi.fn(),
+  isMock: vi.fn(() => false),
+};
 
-vi.mock('../lib/nansen.js', () => ({
-  fetchNetflow,
-  fetchDexTrades,
-  fetchTokenScreener,
-  CHAINS: ['ethereum', 'solana', 'base', 'arbitrum', 'polygon', 'optimism', 'avalanche', 'bnb'],
+vi.mock('../lib/providers/index.js', () => ({
+  provider: () => mockProvider,
+  initProvider: vi.fn(),
+  registerProvider: vi.fn(),
+  resetProvider: vi.fn(),
+  CHAINS: ['ethereum', 'solana', 'base', 'bnb', 'hyperliquid'],
+  get Provider() { return undefined; },
+}));
+
+vi.mock('../lib/providers/types.js', () => ({
+  CHAINS: ['ethereum', 'solana', 'base', 'bnb', 'hyperliquid'],
 }));
 
 describe('scanner', () => {
@@ -20,9 +29,9 @@ describe('scanner', () => {
   });
 
   it('scans a single chain and returns results', async () => {
-    fetchNetflow.mockResolvedValue({ ok: true, data: { data: [{ symbol: 'ETH' }] } });
-    fetchDexTrades.mockResolvedValue({ ok: true, data: { data: [{ symbol: 'ETH', side: 'buy' }] } });
-    fetchTokenScreener.mockResolvedValue({ ok: true, data: { data: [{ symbol: 'ETH' }] } });
+    mockProvider.fetchNetflow.mockResolvedValue({ ok: true, data: { data: [{ symbol: 'ETH' }] } });
+    mockProvider.fetchDexTrades.mockResolvedValue({ ok: true, data: { data: [{ symbol: 'ETH', side: 'buy' }] } });
+    mockProvider.fetchTokenScreener.mockResolvedValue({ ok: true, data: { data: [{ symbol: 'ETH' }] } });
 
     const { scanChain } = await import('../lib/scanner.js');
     const result = await scanChain('ethereum');
@@ -34,9 +43,9 @@ describe('scanner', () => {
   });
 
   it('returns empty arrays for failed responses', async () => {
-    fetchNetflow.mockResolvedValue({ ok: false });
-    fetchDexTrades.mockResolvedValue({ ok: false });
-    fetchTokenScreener.mockResolvedValue({ ok: false });
+    mockProvider.fetchNetflow.mockResolvedValue({ ok: false });
+    mockProvider.fetchDexTrades.mockResolvedValue({ ok: false });
+    mockProvider.fetchTokenScreener.mockResolvedValue({ ok: false });
 
     const { scanChain } = await import('../lib/scanner.js');
     const result = await scanChain('base');
@@ -47,9 +56,9 @@ describe('scanner', () => {
   });
 
   it('returns empty arrays when fetches reject', async () => {
-    fetchNetflow.mockRejectedValue(new Error('fail'));
-    fetchDexTrades.mockRejectedValue(new Error('fail'));
-    fetchTokenScreener.mockRejectedValue(new Error('fail'));
+    mockProvider.fetchNetflow.mockRejectedValue(new Error('fail'));
+    mockProvider.fetchDexTrades.mockRejectedValue(new Error('fail'));
+    mockProvider.fetchTokenScreener.mockRejectedValue(new Error('fail'));
 
     const { scanChain } = await import('../lib/scanner.js');
     const result = await scanChain('solana');
@@ -60,35 +69,35 @@ describe('scanner', () => {
   });
 
   it('calls fetchers with correct args', async () => {
-    fetchNetflow.mockResolvedValue({ ok: true, data: { data: [] } });
-    fetchDexTrades.mockResolvedValue({ ok: true, data: { data: [] } });
-    fetchTokenScreener.mockResolvedValue({ ok: true, data: { data: [] } });
+    mockProvider.fetchNetflow.mockResolvedValue({ ok: true, data: { data: [] } });
+    mockProvider.fetchDexTrades.mockResolvedValue({ ok: true, data: { data: [] } });
+    mockProvider.fetchTokenScreener.mockResolvedValue({ ok: true, data: { data: [] } });
 
     const { scanChain } = await import('../lib/scanner.js');
-    await scanChain('arbitrum');
+    await scanChain('ethereum');
 
-    expect(fetchNetflow).toHaveBeenCalledWith('arbitrum', 20);
-    expect(fetchDexTrades).toHaveBeenCalledWith('arbitrum', 20);
-    expect(fetchTokenScreener).toHaveBeenCalledWith('arbitrum', '24h', 20);
+    expect(mockProvider.fetchNetflow).toHaveBeenCalledWith('ethereum', 20);
+    expect(mockProvider.fetchDexTrades).toHaveBeenCalledWith('ethereum', 20);
+    expect(mockProvider.fetchTokenScreener).toHaveBeenCalledWith('ethereum', '24h', 20);
   });
 
-  it('scans all 8 chains by default', async () => {
-    fetchNetflow.mockResolvedValue({ ok: true, data: { data: [] } });
-    fetchDexTrades.mockResolvedValue({ ok: true, data: { data: [] } });
-    fetchTokenScreener.mockResolvedValue({ ok: true, data: { data: [] } });
+  it('scans all 5 chains by default', async () => {
+    mockProvider.fetchNetflow.mockResolvedValue({ ok: true, data: { data: [] } });
+    mockProvider.fetchDexTrades.mockResolvedValue({ ok: true, data: { data: [] } });
+    mockProvider.fetchTokenScreener.mockResolvedValue({ ok: true, data: { data: [] } });
 
     const { scanAll } = await import('../lib/scanner.js');
     const results = await scanAll();
 
-    expect(results).toHaveLength(8);
+    expect(results).toHaveLength(5);
     expect(results[0]?.chain).toBe('ethereum');
-    expect(fetchNetflow).toHaveBeenCalledTimes(8);
+    expect(mockProvider.fetchNetflow).toHaveBeenCalledTimes(5);
   });
 
   it('scans only specified chains', async () => {
-    fetchNetflow.mockResolvedValue({ ok: true, data: { data: [] } });
-    fetchDexTrades.mockResolvedValue({ ok: true, data: { data: [] } });
-    fetchTokenScreener.mockResolvedValue({ ok: true, data: { data: [] } });
+    mockProvider.fetchNetflow.mockResolvedValue({ ok: true, data: { data: [] } });
+    mockProvider.fetchDexTrades.mockResolvedValue({ ok: true, data: { data: [] } });
+    mockProvider.fetchTokenScreener.mockResolvedValue({ ok: true, data: { data: [] } });
 
     const { scanAll } = await import('../lib/scanner.js');
     const results = await scanAll(['ethereum', 'base']);

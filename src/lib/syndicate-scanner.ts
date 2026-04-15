@@ -1,4 +1,5 @@
-import { fetchDexTrades, CHAINS, isMock, type Chain } from './nansen.js';
+import { CHAINS, type Chain } from './providers/types.js';
+import { provider } from './providers/index.js';
 import { detectSyndicates, formatReport, type WalletTrade, type SyndicateReport } from './syndicate.js';
 
 const MOCK_TRADES: WalletTrade[] = [
@@ -20,7 +21,8 @@ const MOCK_TRADES: WalletTrade[] = [
 ];
 
 export async function scanForSyndicates(chains?: Chain[]): Promise<SyndicateReport> {
-  if (isMock()) {
+  const p = provider();
+  if (p.isMock()) {
     return detectSyndicates(MOCK_TRADES);
   }
 
@@ -30,7 +32,7 @@ export async function scanForSyndicates(chains?: Chain[]): Promise<SyndicateRepo
 
   for (let i = 0; i < targets.length; i += BATCH) {
     const batch = targets.slice(i, i + BATCH);
-    const results = await Promise.allSettled(batch.map(c => fetchDexTrades(c, 50)));
+    const results = await Promise.allSettled(batch.map(c => p.fetchDexTrades(c, 50)));
 
     for (let j = 0; j < results.length; j++) {
       const r = results[j];

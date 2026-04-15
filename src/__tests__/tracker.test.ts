@@ -5,8 +5,18 @@ const readFile = vi.fn();
 const mkdir = vi.fn();
 const fetchTokenInfo = vi.fn();
 
+const mockProvider = {
+  fetchTokenInfo,
+  isMock: () => false,
+};
+
 vi.mock('node:fs/promises', () => ({ writeFile, readFile, mkdir }));
-vi.mock('../lib/nansen.js', () => ({ fetchTokenInfo, isMock: () => false }));
+vi.mock('../lib/providers/index.js', () => ({
+  provider: () => mockProvider,
+  initProvider: vi.fn(),
+  registerProvider: vi.fn(),
+  resetProvider: vi.fn(),
+}));
 
 describe('tracker', () => {
   beforeEach(() => {

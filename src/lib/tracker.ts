@@ -2,7 +2,7 @@ import { writeFile, readFile, mkdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { AlphaSignal } from './signal-engine.js';
-import { fetchTokenInfo } from './nansen.js';
+import { provider } from './providers/index.js';
 
 const DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'data');
 const FILE = join(DIR, 'signal-history.json');
@@ -52,7 +52,7 @@ export async function trackSignal(signal: AlphaSignal): Promise<TrackedSignal> {
 
   try {
     const chain = signal.chains[0] || 'ethereum';
-    const res = await fetchTokenInfo(chain as any, signal.symbol);
+    const res = await provider().fetchTokenInfo(chain as any, signal.symbol);
     if (res.ok && res.data?.data) {
       const d = res.data.data as any;
       tracked.priceAtDetection = parseFloat(d.price_usd || d.price || '0');
@@ -67,7 +67,7 @@ export async function trackSignal(signal: AlphaSignal): Promise<TrackedSignal> {
 async function fetchCurrentPrice(signal: TrackedSignal): Promise<number | undefined> {
   try {
     const chain = signal.chains[0] || 'ethereum';
-    const res = await fetchTokenInfo(chain as any, signal.symbol);
+    const res = await provider().fetchTokenInfo(chain as any, signal.symbol);
     if (res.ok && res.data?.data) {
       const d = res.data.data as any;
       return parseFloat(d.price_usd || d.price || '0');

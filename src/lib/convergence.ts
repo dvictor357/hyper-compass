@@ -1,5 +1,5 @@
 import type { TokenAccumulation } from './scanner.js';
-import type { Chain } from './nansen.js';
+import type { Chain } from './providers/types.js';
 
 export type Classification = 'EXTREME' | 'HIGH' | 'MODERATE' | 'LOW' | 'NOISE';
 

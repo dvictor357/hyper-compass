@@ -1,7 +1,5 @@
-import {
-  fetchNetflow, fetchDexTrades, fetchTokenScreener,
-  CHAINS, type Chain,
-} from './nansen.js';
+import { CHAINS, type Chain } from './providers/types.js';
+import { provider } from './providers/index.js';
 
 export interface ChainScan {
   chain: Chain;
@@ -22,10 +20,11 @@ export interface TokenAccumulation {
 }
 
 export async function scanChain(chain: Chain): Promise<ChainScan> {
+  const p = provider();
   const [netflowRes, dexRes, screenerRes] = await Promise.allSettled([
-    fetchNetflow(chain, 20),
-    fetchDexTrades(chain, 20),
-    fetchTokenScreener(chain, '24h', 20),
+    p.fetchNetflow(chain, 20),
+    p.fetchDexTrades(chain, 20),
+    p.fetchTokenScreener(chain, '24h', 20),
   ]);
 
   const extract = <T>(r: PromiseSettledResult<any>): T[] =>

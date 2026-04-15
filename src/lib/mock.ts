@@ -1,4 +1,4 @@
-import type { Chain } from './nansen.ts';
+import type { Chain } from './providers/types.ts';
 
 type TokenEntry = {
   symbol: string;
@@ -49,22 +49,12 @@ const NETFLOW: Record<string, TokenEntry[]> = {
     { symbol: 'ETH', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', netFlow1h: 56000, netFlow24h: 1120000, netFlow7d: 2800000, netFlow30d: 6700000, chain: 'base', traderCount: 8, marketCap: 244000000000 },
     { symbol: 'AERO', address: '0x940181a94a35a4569e4529a3cdfb74e38fd98631', netFlow1h: 0, netFlow24h: 560000, netFlow7d: 1200000, netFlow30d: 2900000, chain: 'base', traderCount: 5, marketCap: 780000000 },
   ],
-  arbitrum: [
-    { symbol: 'ETH', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', netFlow1h: 42000, netFlow24h: 980000, netFlow7d: 2200000, netFlow30d: 5400000, chain: 'arbitrum', traderCount: 7, marketCap: 244000000000 },
-    { symbol: 'ARB', address: '0x912ce59144191c1204e64559fe8253a0e49e6548', netFlow1h: 0, netFlow24h: 420000, netFlow7d: 890000, netFlow30d: 2100000, chain: 'arbitrum', traderCount: 4, marketCap: 3400000000 },
-  ],
-  polygon: [
-    { symbol: 'MATIC', address: '0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0', netFlow1h: 0, netFlow24h: 450000, netFlow7d: 980000, netFlow30d: 2300000, chain: 'polygon', traderCount: 5, marketCap: 4200000000 },
-  ],
-  optimism: [
-    { symbol: 'ETH', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', netFlow1h: 28000, netFlow24h: 670000, netFlow7d: 1500000, netFlow30d: 3600000, chain: 'optimism', traderCount: 5, marketCap: 244000000000 },
-    { symbol: 'OP', address: '0x4200000000000000000000000000000000000042', netFlow1h: 0, netFlow24h: 290000, netFlow7d: 620000, netFlow30d: 1400000, chain: 'optimism', traderCount: 3, marketCap: 2800000000 },
-  ],
-  avalanche: [
-    { symbol: 'AVAX', address: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7', netFlow1h: 0, netFlow24h: 380000, netFlow7d: 810000, netFlow30d: 1900000, chain: 'avalanche', traderCount: 4, marketCap: 12000000000 },
-  ],
   bnb: [
     { symbol: 'BNB', address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', netFlow1h: 0, netFlow24h: 520000, netFlow7d: 1100000, netFlow30d: 2600000, chain: 'bnb', traderCount: 4, marketCap: 89000000000 },
+    { symbol: 'CAKE', address: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82', netFlow1h: 0, netFlow24h: 180000, netFlow7d: 450000, netFlow30d: 1100000, chain: 'bnb', traderCount: 3, marketCap: 980000000 },
+  ],
+  hyperliquid: [
+    { symbol: 'HYPE', address: '0x0000000000000000000000000000000000000000', netFlow1h: 0, netFlow24h: 380000, netFlow7d: 890000, netFlow30d: 2100000, chain: 'hyperliquid', traderCount: 6, marketCap: 2400000000 },
   ],
 };
 
@@ -84,22 +74,10 @@ const DEX_TRADES: Record<string, DexTrade[]> = {
     { boughtSymbol: 'ETH', boughtAddress: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', soldSymbol: 'USDC', soldAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', valueUsd: 560000, trader: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F', traderLabel: 'Fund', chain: 'base', timestamp: now() },
     { boughtSymbol: 'AERO', boughtAddress: '0x940181a94a35a4569e4529a3cdfb74e38fd98631', soldSymbol: 'ETH', soldAddress: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', valueUsd: 230000, trader: '0xDe9018BfF1bCc43e3BD09e3db0FAb367E32CfB47', traderLabel: 'Smart Trader', chain: 'base', timestamp: now() },
   ],
-  arbitrum: [
-    { boughtSymbol: 'ETH', boughtAddress: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', soldSymbol: 'USDC', soldAddress: '0xaf88d065e77c8cc2239327c5edb3a432268e5831', valueUsd: 420000, trader: '0x4A8e60D8CB3C782D0D3c4C04be0C0C8D04f1D1f5', traderLabel: 'Fund', chain: 'arbitrum', timestamp: now() },
-    { boughtSymbol: 'GMX', boughtAddress: '0xfc5a1a6eb076a2c7ad06ed22c90d7e710e35ad0a', soldSymbol: 'ETH', soldAddress: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', valueUsd: 180000, trader: '0xBb2b8038a1640196FbE3e38816F3e67Cba72D940', traderLabel: '90D Trader', chain: 'arbitrum', timestamp: now() },
-  ],
-  polygon: [
-    { boughtSymbol: 'MATIC', boughtAddress: '0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0', soldSymbol: 'USDC', soldAddress: '0x2791bca1f2de4661ed88a30c99a7a9449aa84174', valueUsd: 210000, trader: '0x9F3BfC5D88afC0E4C0E3Ac7e93aDe842E5d4F3b2', traderLabel: 'Whale', chain: 'polygon', timestamp: now() },
-  ],
-  optimism: [
-    { boughtSymbol: 'ETH', boughtAddress: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', soldSymbol: 'USDC', soldAddress: '0x7f5c764cbc14f9669b88837ca1490cca17c31607', valueUsd: 340000, trader: '0x2Ce21976443622ab8F0B7F6fa3aF953ff9BCd5A7', traderLabel: 'Smart Trader', chain: 'optimism', timestamp: now() },
-  ],
-  avalanche: [
-    { boughtSymbol: 'AVAX', boughtAddress: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7', soldSymbol: 'USDC', soldAddress: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E', valueUsd: 170000, trader: '0x5Dd596C901987A2b28C38A9C1DfBf86fFFc15d77', traderLabel: 'Fund', chain: 'avalanche', timestamp: now() },
-  ],
   bnb: [
     { boughtSymbol: 'BNB', boughtAddress: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', soldSymbol: 'USDT', soldAddress: '0x55d398326f99059ff775485246999027b3197955', valueUsd: 290000, trader: '0x8C2D48ea5DcD3c5e2f3c6FC02CA4D16e3B0e22F1', traderLabel: 'Whale', chain: 'bnb', timestamp: now() },
   ],
+  hyperliquid: [],
 };
 
 const SCREENER: Record<string, ScreenerRow[]> = {
@@ -114,18 +92,10 @@ const SCREENER: Record<string, ScreenerRow[]> = {
   base: [
     { symbol: 'AERO', priceUsd: '1.87', change24h: '+6.2%', volume24h: '120000000', marketCap: '780000000' },
   ],
-  arbitrum: [
-    { symbol: 'GMX', priceUsd: '42.50', change24h: '+2.8%', volume24h: '89000000', marketCap: '380000000' },
-    { symbol: 'ARB', priceUsd: '1.05', change24h: '+4.1%', volume24h: '320000000', marketCap: '3400000000' },
-  ],
-  polygon: [],
-  optimism: [
-    { symbol: 'OP', priceUsd: '2.15', change24h: '+3.9%', volume24h: '210000000', marketCap: '2800000000' },
-  ],
-  avalanche: [],
   bnb: [
     { symbol: 'CAKE', priceUsd: '3.40', change24h: '+1.2%', volume24h: '95000000', marketCap: '980000000' },
   ],
+  hyperliquid: [],
 };
 
 const ACCOUNT_MOCK = { plan: 'pro', creditsRemaining: 470 };
